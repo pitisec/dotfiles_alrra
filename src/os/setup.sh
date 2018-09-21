@@ -1,14 +1,14 @@
 #!/bin/bash
 
-declare -r GITHUB_REPOSITORY="alrra/dotfiles"
-
+declare -r GITHUB_REPOSITORY="pitisec/dotfiles"
 declare -r DOTFILES_ORIGIN="git@github.com:$GITHUB_REPOSITORY.git"
 declare -r DOTFILES_TARBALL_URL="https://github.com/$GITHUB_REPOSITORY/tarball/master"
 declare -r DOTFILES_UTILS_URL="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/master/src/os/utils.sh"
+declare -r LOCAL_CONFIG_FILE="$HOME/.dotfiles.local"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-declare dotfilesDirectory="$HOME/projects/dotfiles"
+declare dotfilesDirectory="$HOME/.dotfiles"
 declare skipQuestions=false
 
 # ----------------------------------------------------------------------
@@ -49,7 +49,7 @@ download_dotfiles() {
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    print_in_purple "\n • Download and extract archive\n\n"
+    print_in_purple_dot "Download and extract archive"
 
     tmpFile="$(mktemp /tmp/XXXXX)"
 
@@ -196,6 +196,33 @@ verify_os() {
 
 }
 
+generate_defaults() {
+
+    if [ -e "$LOCAL_CONFIG_FILE.tmp" ]; then
+      printf "%s" "Change config file $LOCAL_CONFIG_FILE.tmp and change it's name to $LOCAL_CONFIG_FILE" || exit 1;
+    else
+      printf "%s" "Generating config file $LOCAL_CONFIG_FILE.tmp, change it and rename to $LOCAL_CONFIG_FILE"
+      printf "%s\n" \
+"#!/bin/bash
+echo lalala
+declare -r LOCAL_CONFIG_NAME=\"\"
+declare -r LOCAL_CONFIG_FULLNAME=\"\"
+declare -r LOCAL_CONFIG_EMAIL=\"\"
+declare -r LOCAL_CONFIG_HOSTNAME=\"\"" \
+      >> $LOCAL_CONFIG_FILE.tmp
+    fi
+
+}
+
+run_defaults() {
+
+    if [ ! -x "$LOCAL_CONFIG_FILE" ]; then
+      chmod u+x $LOCAL_CONFIG_FILE
+    fi
+    . "$LOCAL_CONFIG_FILE" || exit 1
+
+}
+
 # ----------------------------------------------------------------------
 # | Main                                                               |
 # ----------------------------------------------------------------------
@@ -228,6 +255,16 @@ main() {
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+    # Load / Create defaults
+
+    if [ -f "$LOCAL_CONFIG_FILE" ]; then
+      run_defaults || exit 1
+    else
+      generate_defaults || exit 1
+    fi
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     skip_questions "$@" \
         && skipQuestions=true
 
@@ -243,48 +280,45 @@ main() {
 
     printf "%s" "${BASH_SOURCE[0]}" | grep "setup.sh" &> /dev/null \
         || download_dotfiles
+exit 1
+exit 0
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    #./0_create_symbolic_links.sh "$@"
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    ./create_directories.sh
+    #./1_create_local_config_files.sh
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    ./create_symbolic_links.sh "$@"
+    #./2_install_apps.sh
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    ./create_local_config_files.sh
+    #./preferences/main.sh
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    ./install/main.sh
+    # if cmd_exists "git"; then
+
+    #     if [ "$(git config --get remote.origin.url)" != "$DOTFILES_ORIGIN" ]; then
+    #         ./3_initialize_git_repository.sh "$DOTFILES_ORIGIN"
+    #     fi
+
+    #     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    #     if ! $skipQuestions; then
+    #         ./4_update_content.sh
+    #     fi
+
+    # fi
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    ./preferences/main.sh
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    if cmd_exists "git"; then
-
-        if [ "$(git config --get remote.origin.url)" != "$DOTFILES_ORIGIN" ]; then
-            ./initialize_git_repository.sh "$DOTFILES_ORIGIN"
-        fi
-
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-        if ! $skipQuestions; then
-            ./update_content.sh
-        fi
-
-    fi
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    if ! $skipQuestions; then
-        ./restart.sh
-    fi
+    # if ! $skipQuestions; then
+    #     ./5_restart.sh
+    # fi
 
 }
 

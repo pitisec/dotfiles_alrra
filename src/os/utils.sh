@@ -223,7 +223,11 @@ print_in_green() {
 }
 
 print_in_purple() {
-    print_in_color "$1" 5
+    print_in_color "\n  $1\n\n" 5
+}
+
+print_in_purple_dot() {
+    print_in_color "\n • $1\n\n" 5
 }
 
 print_in_red() {
